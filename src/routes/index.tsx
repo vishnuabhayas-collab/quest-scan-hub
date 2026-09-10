@@ -79,39 +79,6 @@ function SignInPage() {
     navigate({ to: target, replace: true });
   }
 
-  async function handleSetup(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError(null);
-    setNotice(null);
-    const { error: signUpError } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: window.location.origin },
-    });
-    if (signUpError) {
-      setError(signUpError.message);
-      setBusy(false);
-      return;
-    }
-    const { data: session } = await supabase.auth.getSession();
-    if (!session.session) {
-      setNotice("Account created. Please confirm your email, then sign in.");
-      setSetupMode(false);
-      setBusy(false);
-      return;
-    }
-    const { data: claim } = await supabase.rpc("claim_first_admin");
-    const status = (claim as { status?: string } | null)?.status;
-    if (status !== "ok") {
-      await supabase.auth.signOut();
-      setError("An organiser account already exists. Ask them to create your team login.");
-      setBusy(false);
-      return;
-    }
-    navigate({ to: "/admin", replace: true });
-  }
-
   if (checking) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background">
@@ -128,15 +95,10 @@ function SignInPage() {
             <QrCode className="h-7 w-7" />
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">QR Points Challenge</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {setupMode ? "Create the organiser account" : "Sign in to continue"}
-          </p>
+          <p className="mt-1 text-sm text-muted-foreground">Sign in to continue</p>
         </div>
 
-        <form
-          onSubmit={setupMode ? handleSetup : handleSignIn}
-          className="space-y-4 rounded-xl border border-border bg-card p-6"
-        >
+        <form onSubmit={handleSignIn} className="space-y-4 rounded-xl border border-border bg-card p-6">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -154,7 +116,7 @@ function SignInPage() {
             <Input
               id="password"
               type="password"
-              autoComplete={setupMode ? "new-password" : "current-password"}
+              autoComplete="current-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
@@ -166,21 +128,9 @@ function SignInPage() {
 
           <Button type="submit" className="h-11 w-full" disabled={busy}>
             {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {setupMode ? "Create organiser account" : "Sign in"}
+            Sign in
           </Button>
         </form>
-
-        <button
-          type="button"
-          className="mt-4 w-full text-center text-xs text-muted-foreground underline-offset-4 hover:underline"
-          onClick={() => {
-            setSetupMode((v) => !v);
-            setError(null);
-            setNotice(null);
-          }}
-        >
-          {setupMode ? "Back to sign in" : "First-time setup: create organiser account"}
-        </button>
       </div>
     </main>
   );
