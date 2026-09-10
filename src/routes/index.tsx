@@ -43,7 +43,6 @@ function SignInPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [setupMode, setSetupMode] = useState(false);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
