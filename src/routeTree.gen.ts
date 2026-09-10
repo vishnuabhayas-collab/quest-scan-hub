@@ -15,6 +15,7 @@ import { Route as AuthenticatedAdminRouteRouteImport } from './routes/_authentic
 import { Route as AuthenticatedTeamRouteImport } from './routes/_authenticated/team'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as AuthenticatedAdminQrRouteImport } from './routes/_authenticated/admin/qr'
+import { Route as AuthenticatedAdminScansRouteImport } from './routes/_authenticated/admin/scans'
 import { Route as AuthenticatedAdminTeamsRouteImport } from './routes/_authenticated/admin/teams'
 
 const IndexRoute = IndexRouteImport.update({
@@ -46,6 +47,11 @@ const AuthenticatedAdminQrRoute = AuthenticatedAdminQrRouteImport.update({
   path: '/qr',
   getParentRoute: () => AuthenticatedAdminRouteRoute,
 } as any)
+const AuthenticatedAdminScansRoute = AuthenticatedAdminScansRouteImport.update({
+  id: '/scans',
+  path: '/scans',
+  getParentRoute: () => AuthenticatedAdminRouteRoute,
+} as any)
 const AuthenticatedAdminTeamsRoute = AuthenticatedAdminTeamsRouteImport.update({
   id: '/teams',
   path: '/teams',
@@ -57,6 +63,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/team': typeof AuthenticatedTeamRoute
   '/admin/qr': typeof AuthenticatedAdminQrRoute
+  '/admin/scans': typeof AuthenticatedAdminScansRoute
   '/admin/teams': typeof AuthenticatedAdminTeamsRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
 }
@@ -64,6 +71,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/team': typeof AuthenticatedTeamRoute
   '/admin/qr': typeof AuthenticatedAdminQrRoute
+  '/admin/scans': typeof AuthenticatedAdminScansRoute
   '/admin/teams': typeof AuthenticatedAdminTeamsRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
 }
@@ -74,14 +82,22 @@ export interface FileRoutesById {
   '/_authenticated/admin': typeof AuthenticatedAdminRouteRouteWithChildren
   '/_authenticated/team': typeof AuthenticatedTeamRoute
   '/_authenticated/admin/qr': typeof AuthenticatedAdminQrRoute
+  '/_authenticated/admin/scans': typeof AuthenticatedAdminScansRoute
   '/_authenticated/admin/teams': typeof AuthenticatedAdminTeamsRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/admin' | '/team' | '/admin/qr' | '/admin/teams' | '/admin/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/team'
+    | '/admin/qr'
+    | '/admin/scans'
+    | '/admin/teams'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/team' | '/admin/qr' | '/admin/teams' | '/admin'
+  to: '/' | '/team' | '/admin/qr' | '/admin/scans' | '/admin/teams' | '/admin'
   id:
     | '__root__'
     | '/'
@@ -89,6 +105,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin'
     | '/_authenticated/team'
     | '/_authenticated/admin/qr'
+    | '/_authenticated/admin/scans'
     | '/_authenticated/admin/teams'
     | '/_authenticated/admin/'
   fileRoutesById: FileRoutesById
@@ -142,6 +159,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminQrRouteImport
       parentRoute: typeof AuthenticatedAdminRouteRoute
     }
+    '/_authenticated/admin/scans': {
+      id: '/_authenticated/admin/scans'
+      path: '/scans'
+      fullPath: '/admin/scans'
+      preLoaderRoute: typeof AuthenticatedAdminScansRouteImport
+      parentRoute: typeof AuthenticatedAdminRouteRoute
+    }
     '/_authenticated/admin/teams': {
       id: '/_authenticated/admin/teams'
       path: '/teams'
@@ -154,6 +178,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteRouteChildren {
   AuthenticatedAdminQrRoute: typeof AuthenticatedAdminQrRoute
+  AuthenticatedAdminScansRoute: typeof AuthenticatedAdminScansRoute
   AuthenticatedAdminTeamsRoute: typeof AuthenticatedAdminTeamsRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
@@ -161,6 +186,7 @@ interface AuthenticatedAdminRouteRouteChildren {
 const AuthenticatedAdminRouteRouteChildren: AuthenticatedAdminRouteRouteChildren =
   {
     AuthenticatedAdminQrRoute: AuthenticatedAdminQrRoute,
+    AuthenticatedAdminScansRoute: AuthenticatedAdminScansRoute,
     AuthenticatedAdminTeamsRoute: AuthenticatedAdminTeamsRoute,
     AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   }
