@@ -175,6 +175,7 @@ export type Database = {
         Returns: boolean
       }
       scan_qr: { Args: { p_token: string }; Returns: Json }
+      scan_qr_revoked_check: { Args: { p_team_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "team"
