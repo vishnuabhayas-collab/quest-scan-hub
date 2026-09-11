@@ -80,23 +80,27 @@ export const forceLogoutTeam = createServerFn({ method: "POST" })
     await assertAdmin(context.supabase as unknown as SupabaseClient, context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    // Mark the team as signed out so their app kicks them out immediately.
+    const { data: rpc, error: rpcError } = await supabaseAdmin.rpc("admin_force_logout_team", {
+      p_team_id: data.teamId,
+    });
+    if (rpcError) throw new Error("Could not sign the team out.");
+    const result = rpc as { status?: string; message?: string } | null;
+    if (result?.status !== "ok") throw new Error(result?.message ?? "Could not sign the team out.");
+
+    // Also revoke their stored sessions/refresh tokens.
     const { data: profiles } = await supabaseAdmin
       .from("profiles")
       .select("user_id")
       .eq("team_id", data.teamId);
 
-    const url = process.env["SUPABASE_URL"]!;
-    const serviceKey = process.env["SUPABASE_SERVICE_ROLE_KEY"]!;
-
     for (const profile of profiles ?? []) {
-      await fetch(`${url}/auth/v1/admin/users/${profile.user_id}/logout`, {
-        method: "POST",
-        headers: {
-          apikey: serviceKey,
-          Authorization: `Bearer ${serviceKey}`,
-          "Content-Type": "application/json",
-        },
-      });
+      try {
+        await supabaseAdmin.auth.admin.signOut(profile.user_id, "global");
+      } catch {
+        // Session revocation is best effort; the dashboard check above is authoritative.
+      }
     }
     return { ok: true };
   });
+
