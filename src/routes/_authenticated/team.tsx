@@ -44,12 +44,25 @@ function TeamDashboard() {
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["team-dashboard"],
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
     queryFn: async (): Promise<Dashboard> => {
       const { data: rpc, error } = await supabase.rpc("get_team_dashboard");
       if (error) throw new Error("Could not load your dashboard.");
       return rpc as Dashboard;
     },
   });
+
+  // Organiser can sign a team out remotely.
+  useEffect(() => {
+    if (data?.status !== "logged_out") return;
+    void (async () => {
+      await supabase.auth.signOut();
+      queryClient.clear();
+      window.location.href = "/";
+    })();
+  }, [data?.status, queryClient]);
+
 
   async function submitToken(token: string) {
     setScannerOpen(false);

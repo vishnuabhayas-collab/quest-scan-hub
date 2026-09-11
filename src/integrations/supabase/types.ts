@@ -117,18 +117,21 @@ export type Database = {
           created_at: string
           id: string
           points: number
+          sessions_revoked_at: string | null
           team_name: string
         }
         Insert: {
           created_at?: string
           id?: string
           points?: number
+          sessions_revoked_at?: string | null
           team_name: string
         }
         Update: {
           created_at?: string
           id?: string
           points?: number
+          sessions_revoked_at?: string | null
           team_name?: string
         }
         Relationships: []
@@ -160,6 +163,7 @@ export type Database = {
     }
     Functions: {
       admin_delete_scan: { Args: { p_scan_id: string }; Returns: Json }
+      admin_force_logout_team: { Args: { p_team_id: string }; Returns: Json }
       claim_first_admin: { Args: never; Returns: Json }
       current_team_id: { Args: never; Returns: string }
       get_team_dashboard: { Args: never; Returns: Json }
@@ -171,6 +175,7 @@ export type Database = {
         Returns: boolean
       }
       scan_qr: { Args: { p_token: string }; Returns: Json }
+      scan_qr_revoked_check: { Args: { p_team_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "team"

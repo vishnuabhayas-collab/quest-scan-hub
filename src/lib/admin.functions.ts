@@ -78,25 +78,45 @@ export const forceLogoutTeam = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     await assertAdmin(context.supabase as unknown as SupabaseClient, context.userId);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    // Mark the team as signed out (runs as the admin user) so their app kicks them out.
+    const { data: rpc, error: rpcError } = await context.supabase.rpc("admin_force_logout_team", {
+      p_team_id: data.teamId,
+    });
+    if (rpcError) throw new Error("Could not sign the team out.");
+    const result = rpc as { status?: string; message?: string } | null;
+    if (result?.status !== "ok") throw new Error(result?.message ?? "Could not sign the team out.");
+
+    // Best effort: also revoke their stored sessions / refresh tokens.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: profiles } = await supabaseAdmin
       .from("profiles")
       .select("user_id")
       .eq("team_id", data.teamId);
 
-    const url = process.env["SUPABASE_URL"]!;
-    const serviceKey = process.env["SUPABASE_SERVICE_ROLE_KEY"]!;
+    const url = process.env["SUPABASE_URL"];
+    const serviceKey = process.env["SUPABASE_SERVICE_ROLE_KEY"];
+    if (url && serviceKey) {
+      const headers: Record<string, string> = {
+        apikey: serviceKey,
+        "Content-Type": "application/json",
+      };
+      // New-format keys are opaque strings, not bearer JWTs.
+      if (!serviceKey.startsWith("sb_secret_")) headers["Authorization"] = `Bearer ${serviceKey}`;
 
-    for (const profile of profiles ?? []) {
-      await fetch(`${url}/auth/v1/admin/users/${profile.user_id}/logout`, {
-        method: "POST",
-        headers: {
-          apikey: serviceKey,
-          Authorization: `Bearer ${serviceKey}`,
-          "Content-Type": "application/json",
-        },
-      });
+      for (const profile of profiles ?? []) {
+        try {
+          await fetch(`${url}/auth/v1/admin/users/${profile.user_id}/logout`, {
+            method: "POST",
+            headers,
+          });
+        } catch {
+          // Ignored: the dashboard check above is authoritative.
+        }
+      }
     }
+
     return { ok: true };
   });
+
+
