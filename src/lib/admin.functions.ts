@@ -107,6 +107,8 @@ export const deleteTeamAccount = createServerFn({ method: "POST" })
       .eq("team_id", data.teamId);
 
     for (const profile of profiles ?? []) {
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", profile.user_id);
+      await supabaseAdmin.from("profiles").delete().eq("user_id", profile.user_id);
       await supabaseAdmin.auth.admin.deleteUser(profile.user_id);
     }
     await supabaseAdmin.from("teams").delete().eq("id", data.teamId);
