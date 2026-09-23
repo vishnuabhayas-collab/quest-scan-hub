@@ -10,6 +10,20 @@ async function assertAdmin(supabase: SupabaseClient, userId: string) {
   if (error || data !== true) throw new Error("Not authorised");
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function findAuthUserIdByEmail(admin: any, email: string): Promise<string | null> {
+  for (let page = 1; page <= 20; page++) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 200 });
+    if (error || !data?.users?.length) return null;
+    const match = data.users.find(
+      (u: { id: string; email?: string | null }) => (u.email ?? "").toLowerCase() === email,
+    );
+    if (match) return match.id;
+    if (data.users.length < 200) return null;
+  }
+  return null;
+}
+
 export const createTeamAccount = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: { teamName: string; email: string; password: string }) => {
@@ -32,14 +46,43 @@ export const createTeamAccount = createServerFn({ method: "POST" })
       .single();
     if (teamError || !team) throw new Error("A team with that name may already exist");
 
-    const { data: created, error: userError } = await supabaseAdmin.auth.admin.createUser({
+    let { data: created, error: userError } = await supabaseAdmin.auth.admin.createUser({
       email: data.email,
       password: data.password,
       email_confirm: true,
     });
-    if (userError || !created.user) {
+
+    if (userError || !created?.user) {
+      // The email may belong to a leftover login from a removed team. Clean it up and retry.
+      const existingId = await findAuthUserIdByEmail(supabaseAdmin, data.email);
+      if (existingId) {
+        const { data: linked } = await supabaseAdmin
+          .from("profiles")
+          .select("team_id")
+          .eq("user_id", existingId)
+          .maybeSingle();
+        const stillInUse =
+          linked?.team_id != null &&
+          (
+            await supabaseAdmin.from("teams").select("id").eq("id", linked.team_id).maybeSingle()
+          ).data != null;
+
+        if (!stillInUse) {
+          await supabaseAdmin.from("profiles").delete().eq("user_id", existingId);
+          await supabaseAdmin.from("user_roles").delete().eq("user_id", existingId);
+          await supabaseAdmin.auth.admin.deleteUser(existingId);
+          ({ data: created, error: userError } = await supabaseAdmin.auth.admin.createUser({
+            email: data.email,
+            password: data.password,
+            email_confirm: true,
+          }));
+        }
+      }
+    }
+
+    if (userError || !created?.user) {
       await supabaseAdmin.from("teams").delete().eq("id", team.id);
-      throw new Error("Could not create the login. That email may already be in use.");
+      throw new Error("Could not create the login. That email is already used by another team.");
     }
 
     await supabaseAdmin.from("profiles").insert({ user_id: created.user.id, team_id: team.id });
@@ -64,6 +107,8 @@ export const deleteTeamAccount = createServerFn({ method: "POST" })
       .eq("team_id", data.teamId);
 
     for (const profile of profiles ?? []) {
+      await supabaseAdmin.from("user_roles").delete().eq("user_id", profile.user_id);
+      await supabaseAdmin.from("profiles").delete().eq("user_id", profile.user_id);
       await supabaseAdmin.auth.admin.deleteUser(profile.user_id);
     }
     await supabaseAdmin.from("teams").delete().eq("id", data.teamId);
