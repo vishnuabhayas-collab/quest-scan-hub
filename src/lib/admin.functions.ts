@@ -32,14 +32,43 @@ export const createTeamAccount = createServerFn({ method: "POST" })
       .single();
     if (teamError || !team) throw new Error("A team with that name may already exist");
 
-    const { data: created, error: userError } = await supabaseAdmin.auth.admin.createUser({
+    let { data: created, error: userError } = await supabaseAdmin.auth.admin.createUser({
       email: data.email,
       password: data.password,
       email_confirm: true,
     });
-    if (userError || !created.user) {
+
+    if (userError || !created?.user) {
+      // The email may belong to a leftover login from a removed team. Clean it up and retry.
+      const existingId = await findAuthUserIdByEmail(supabaseAdmin, data.email);
+      if (existingId) {
+        const { data: linked } = await supabaseAdmin
+          .from("profiles")
+          .select("team_id")
+          .eq("user_id", existingId)
+          .maybeSingle();
+        const stillInUse =
+          linked?.team_id != null &&
+          (
+            await supabaseAdmin.from("teams").select("id").eq("id", linked.team_id).maybeSingle()
+          ).data != null;
+
+        if (!stillInUse) {
+          await supabaseAdmin.from("profiles").delete().eq("user_id", existingId);
+          await supabaseAdmin.from("user_roles").delete().eq("user_id", existingId);
+          await supabaseAdmin.auth.admin.deleteUser(existingId);
+          ({ data: created, error: userError } = await supabaseAdmin.auth.admin.createUser({
+            email: data.email,
+            password: data.password,
+            email_confirm: true,
+          }));
+        }
+      }
+    }
+
+    if (userError || !created?.user) {
       await supabaseAdmin.from("teams").delete().eq("id", team.id);
-      throw new Error("Could not create the login. That email may already be in use.");
+      throw new Error("Could not create the login. That email is already used by another team.");
     }
 
     await supabaseAdmin.from("profiles").insert({ user_id: created.user.id, team_id: team.id });
