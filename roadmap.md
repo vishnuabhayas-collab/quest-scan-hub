@@ -1,0 +1,3 @@
+- [ ] Add persisted per-team QR routes, secure ordered scanning and route progress while preserving scan history.
+- [ ] Add admin route editor and team activity display with validated heartbeat updates.
+- [ ] Verify route save, scoring, rollback/session safeguards, and app build; report any external-test blocker.

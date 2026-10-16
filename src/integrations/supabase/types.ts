@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -112,6 +112,65 @@ export type Database = {
           },
         ]
       }
+      team_activity: {
+        Row: {
+          last_seen_at: string
+          team_id: string
+        }
+        Insert: {
+          last_seen_at?: string
+          team_id: string
+        }
+        Update: {
+          last_seen_at?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_activity_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: true
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_routes: {
+        Row: {
+          created_at: string
+          position: number
+          qr_id: string
+          team_id: string
+        }
+        Insert: {
+          created_at?: string
+          position: number
+          qr_id: string
+          team_id: string
+        }
+        Update: {
+          created_at?: string
+          position?: number
+          qr_id?: string
+          team_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_routes_qr_id_fkey"
+            columns: ["qr_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_routes_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           created_at: string
@@ -164,8 +223,10 @@ export type Database = {
     Functions: {
       admin_delete_scan: { Args: { p_scan_id: string }; Returns: Json }
       admin_force_logout_team: { Args: { p_team_id: string }; Returns: Json }
+      admin_team_activity: { Args: never; Returns: Json }
       claim_first_admin: { Args: never; Returns: Json }
       current_team_id: { Args: never; Returns: string }
+      get_admin_team_route: { Args: { p_team_id: string }; Returns: Json }
       get_team_dashboard: { Args: never; Returns: Json }
       has_role: {
         Args: {
@@ -173,6 +234,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      save_team_route: {
+        Args: { p_qr_ids: Json; p_team_id: string }
+        Returns: Json
       }
       scan_qr: { Args: { p_token: string }; Returns: Json }
       scan_qr_revoked_check: { Args: { p_team_id: string }; Returns: boolean }

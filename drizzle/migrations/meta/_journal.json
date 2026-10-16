@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792140245238,
+      "tag": "0000_team_routes_and_activity",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792140305262,
+      "tag": "0001_protect_scan_history_and_revoke_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792140366123,
+      "tag": "0002_validate_active_complete_routes",
+      "breakpoints": true
+    }
+  ]
+}
