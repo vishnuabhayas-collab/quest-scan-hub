@@ -29,6 +29,13 @@
       "when": 1792140416976,
       "tag": "0003_enforce_revoked_team_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792140509614,
+      "tag": "0004_lock_shared_tasks_after_competition_starts",
+      "breakpoints": true
     }
   ]
 }
